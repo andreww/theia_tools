@@ -15,9 +15,14 @@ def read_terra_hst(filename):
        header: a list of strings of header information
        iter_num: a numpy array of iteration numbers corresponding to each 
                  stored step (not all time steps are stored)
+       time: a numpy array of the time (in yr) of each recoreded step
        rshl: a numpy array of radii for the rn+1 radial layers
        tav: a (rshl, nsteps) array of layer avarage temperatures for
             each layer at each recorded time step 
+       htop:
+       hbot:
+       hrad:
+       heat: 
     """
 
     # Deal with compressed files.
@@ -136,10 +141,15 @@ def read_terra_hst(filename):
     # Convert into Numpy arrays (and ignore the stuff we 
     # don't need for now)
     iter_num = np.array(iter_num).astype(np.float)
+    time = np.array(time).astype(np.float)
     rshl = np.array(rshl).astype(np.float)
     tav = np.array(tav).astype(np.float).T
+    htop = np.array(htop).astype(np.float)
+    hbot = np.array(hbot).astype(np.float)
+    hrad = np.array(hrad).astype(np.float)
+    heat = np.array(heat).astype(np.float)
 
-    return nr, header, iter_num, rshl, tav
+    return nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat
 
 
 def plot_layertemp_iter(iter_num, rshl, tav, filename=None):
@@ -165,16 +175,25 @@ def plot_layertemp_iter(iter_num, rshl, tav, filename=None):
 
 if __name__ == "__main__":
     import argparse
+    import terraheat
 
     parser = argparse.ArgumentParser(description=
               'Generate a graphs from a TERRA hst file.')
     parser.add_argument('hstfile', help='TERRA hst file')
     parser.add_argument('-o', '--outfile', help='Ouput graph to a file')
+    parser.add_argument('--heatflux', help='Generate heatflux graph',
+                        action='store_true')
     args = parser.parse_args()
 
-    nr, header, iter_num, rshl, tav = read_terra_hst(args.hstfile)
+    nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat = \
+       read_terra_hst(args.hstfile)
+
     for line in header:
         print line.rstrip('\r\n').strip()
-    plot_layertemp_iter(iter_num, rshl, tav, filename=args.outfile)
+
+    if args.heatflux:
+        terraheat.plot_heat(time, htop, hbot, hrad, heat, filename=args.outfile)
+    else: 
+        plot_layertemp_iter(iter_num, rshl, tav, filename=args.outfile)
     
 
