@@ -53,7 +53,7 @@ def read_texture_file(filename):
                 this_particle['old_process_id'] = int(line)
                 particle_header_lines = particle_header_lines - 1
             elif particle_header_lines == 5:
-                this_particle['particle_class'] = line
+                this_particle['particle_class'] = line.strip()
                 particle_header_lines = particle_header_lines - 1
             elif particle_header_lines == 4:
                 this_particle['particle_position'] = np.array(
@@ -87,6 +87,38 @@ def read_texture_file(filename):
 
     return header_data, particles
 
+class drex_particle(object):
+
+    def __init__(self, position, pclass):
+        self.position = position
+        self.pclas = pclass
+
+def process_drex_particles(particles):
+
+    drex_particles = []
+    for particle in particles:
+        if particle['particle_class'] == 'drex':
+            drex_particles.append(drex_particle(particle['particle_position'].astype(np.float),
+                particle['particle_class']))
+
+    return drex_particles
+
+def plot_particle_list(particle_list):
+    from mpl_toolkits.mplot3d import Axes3D
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    xs = []
+    ys = []
+    zs = []
+    for particle in particle_list:
+        xs.append(particle.position[0])
+        ys.append(particle.position[1])
+        zs.append(particle.position[2])
+
+    ax.scatter(xs, ys, zs)
+    plt.show()
+
 if __name__ == '__main__':
     import argparse
 
@@ -98,3 +130,6 @@ if __name__ == '__main__':
     header_data, particles = read_texture_file(args.theiafile)
     print header_data
     print len(particles)
+    drex_particles = process_drex_particles(particles)
+    print len(drex_particles)
+    plot_particle_list(drex_particles)
