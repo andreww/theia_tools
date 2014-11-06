@@ -4,7 +4,8 @@ import os
 import math
 import numpy as np
 
-def read_terra_hst(filename):
+def read_terra_hst(filename, header_only=False, 
+                   rshl_in=None, header_in=None, nr_in=None):
     """Read an optionally gzip compressed hst file from TERRA
 
     Returns numpy arrays containing data from the formatted
@@ -23,6 +24,13 @@ def read_terra_hst(filename):
        hbot:
        hrad:
        heat: 
+
+    The optional argument "header_only" allows just the file header
+    information to be extracted.
+
+    The optional arguments header_in rshl_in and nr_in are used 
+    toghether for a restart, where the header must be extracted 
+    from the first stage of the run.
     """
 
     # Deal with compressed files.
@@ -66,6 +74,18 @@ def read_terra_hst(filename):
     # into the lists. Better to do the conversion to numpy 
     # arrays in one go afterwards.
     header_num = 7
+
+    # If we have a header we need to skip some steps
+    if ((nr_in is not None) and (header_in is not None) and
+        (rshl_in is not None)):
+        nr = nr_in
+        header = header_in
+        running_block_lines = int(math.ceil((20.0 + float(nr) + 1.0) 
+                                             / 6.0))
+        running_block_lines_tb = running_block_lines
+        rshl = rshl_in
+        header_num = 0
+
     for line in f:
         if header_num == 7:
             # First line - just nr
@@ -97,6 +117,9 @@ def read_terra_hst(filename):
             header_num = header_num - 1
         elif header_num == 0:
             # Now into the main blocks of data
+            if header_only:
+                # We are only looking for header info
+                break
             if running_block_lines_tb == running_block_lines:
                 # First line of a new block
                 these_temps = []
@@ -138,16 +161,26 @@ def read_terra_hst(filename):
 
     f.close()
 
-    # Convert into Numpy arrays (and ignore the stuff we 
-    # don't need for now)
-    iter_num = np.array(iter_num).astype(np.float)
-    time = np.array(time).astype(np.float)
-    rshl = np.array(rshl).astype(np.float)
-    tav = np.array(tav).astype(np.float).T
-    htop = np.array(htop).astype(np.float)
-    hbot = np.array(hbot).astype(np.float)
-    hrad = np.array(hrad).astype(np.float)
-    heat = np.array(heat).astype(np.float)
+    if header_only:
+        rshl = np.array(rshl).astype(np.float)
+        iter_num = None
+        time = None
+        tav = None
+        htop = None
+        hbot = None
+        hrad = None
+        heat = None
+    else:
+        # Convert into Numpy arrays (and ignore the stuff we 
+        # don't need for now)
+        iter_num = np.array(iter_num).astype(np.float)
+        time = np.array(time).astype(np.float)
+        rshl = np.array(rshl).astype(np.float)
+        tav = np.array(tav).astype(np.float).T
+        htop = np.array(htop).astype(np.float)
+        hbot = np.array(hbot).astype(np.float)
+        hrad = np.array(hrad).astype(np.float)
+        heat = np.array(heat).astype(np.float)
 
     return nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat
 
@@ -183,10 +216,21 @@ if __name__ == "__main__":
     parser.add_argument('-o', '--outfile', help='Ouput graph to a file')
     parser.add_argument('--heatflux', help='Generate heatflux graph',
                         action='store_true')
+    parser.add_argument('-r', '--restart', 
+                        help='File name of first stage of restarted run')
     args = parser.parse_args()
 
-    nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat = \
-       read_terra_hst(args.hstfile)
+    if args.restart is not None:
+      # A restart job. The header information lives somewhere else!
+      nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat = \
+         read_terra_hst(args.restart, header_only=True)
+      nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat = \
+         read_terra_hst(args.hstfile, header_in=header, nr_in=nr, 
+                        rshl_in=rshl) 
+
+    else:
+      nr, header, iter_num, time, rshl, tav, htop, hbot, hrad, heat = \
+         read_terra_hst(args.hstfile)
 
     for line in header:
         print line.rstrip('\r\n').strip()
