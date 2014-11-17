@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import numpy as np
+import tex2elas
 
 def read_texture_file(filename):
     """Read data from a theia texture file"""
@@ -95,6 +96,30 @@ class drex_particle(object):
         self.num_grains = idata[0]
         self._unpack_drex_rdata(rdata, self.num_grains)
 
+    def olivine_cij(self, scheme='Voigt'):
+
+        # Single crystal olivine elasticity from DRex - should
+        # check that this is up to date.
+        ol_cij_single = np.zeros((6,6))
+        ol_cij_single[0,0] = 320.71
+        ol_cij_single[1,1] = 197.25
+        ol_cij_single[2,2] = 234.32
+        ol_cij_single[0,1] = 69.84
+        ol_cij_single[1,0] = ol_cij_single[0,1]
+        ol_cij_single[2,0] = 71.22
+        ol_cij_single[0,2] = ol_cij_single[2,0]
+        ol_cij_single[1,2] = 74.80
+        ol_cij_single[2,1] = ol_cij_single[1,2]
+        ol_cij_single[3,3] = 63.77
+        ol_cij_single[4,4] = 77.67
+        ol_cij_single[5,5] = 78.36
+        
+
+        ol_cij = tex2elas.calc_cij(ol_cij_single, self.g_ol, 
+                               self.volfrac_ol, scheme=scheme)
+        return ol_cij
+        
+
     def _unpack_drex_rdata(self, data, ngr):
         """Data is a 1D numpy array. This function pulls out the usefull info"""
 
@@ -174,3 +199,7 @@ if __name__ == '__main__':
 
     assert_is_rotmat(drex_particles[1].g_ol[0,:,:])
     assert_is_rotmat(drex_particles[1].g_en[10,:,:])
+
+    print drex_particles[1].olivine_cij(scheme='Voigt')
+    print drex_particles[1].olivine_cij(scheme='Reuss')
+    print drex_particles[1].olivine_cij(scheme='Hill')
