@@ -93,14 +93,15 @@ class drex_particle(object):
         self.position = position
         self.pclas = pclass
         self.num_grains = idata[0]
-        self.ol_rotmats = self._unpack_drex_rdata(rdata, self.num_grains)
+        self._unpack_drex_rdata(rdata, self.num_grains)
 
     def _unpack_drex_rdata(self, data, ngr):
         """Data is a 1D numpy array. This function pulls out the usefull info"""
 
-        ol_dat = data[0:3*3*ngr].reshape((3,3, ngr)).T
-
-        return ol_dat
+        self.g_ol = data[0:3*3*ngr].reshape((3,3,ngr)).T
+        self.g_en = data[3*3*ngr:2*3*3*ngr].reshape((3,3,ngr)).T
+        self.volfrac_ol = data[2*3*3*ngr:2*3*3*ngr+ngr]
+        self.volfrac_en = data[2*3*3*ngr+ngr:2*3*3*ngr+2*ngr]
 
 def process_drex_particles(particles):
 
@@ -164,5 +165,12 @@ if __name__ == '__main__':
     print len(drex_particles)
     plot_particle_list(drex_particles)
 
-    print drex_particles[1].ol_rotmats[0,:,:]
-    assert_is_rotmat(drex_particles[1].ol_rotmats[0,:,:])
+    print drex_particles[1].g_ol[0,:,:]
+    print drex_particles[1].volfrac_ol[0]
+    print np.sum(drex_particles[1].volfrac_ol[:])
+    print drex_particles[1].g_en[0,:,:]
+    print drex_particles[1].volfrac_en[0]
+    print np.sum(drex_particles[1].volfrac_en[:])
+
+    assert_is_rotmat(drex_particles[1].g_ol[0,:,:])
+    assert_is_rotmat(drex_particles[1].g_en[10,:,:])
