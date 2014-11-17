@@ -67,7 +67,7 @@ def read_texture_file(filename):
                     particle_header_lines = particle_header_lines - 2
             elif particle_header_lines == 2:
                     this_particle['particle_idata'] = np.array(
-                        [line[i:i+12] for i in xrange(0, len(line), 12)]
+                        [line.rstrip('\r\n')[i:i+12] for i in xrange(0, len(line.rstrip('\r\n')), 12)]
                         )
                     particle_header_lines = particle_header_lines - 1
             elif particle_header_lines == 1:
@@ -79,7 +79,7 @@ def read_texture_file(filename):
                     particle_header_lines = 9
             elif particle_header_lines == 0:
                     this_particle['particle_rdata'] = np.array(
-                        [line[i:i+12] for i in xrange(0, len(line), 12)]
+                        [line.rstrip('\r\n')[i:i+12] for i in xrange(0, len(line.rstrip('\r\n')), 12)]
                         )
                     particles.append(this_particle)
                     particle_header_lines = 9
@@ -89,19 +89,36 @@ def read_texture_file(filename):
 
 class drex_particle(object):
 
-    def __init__(self, position, pclass):
+    def __init__(self, position, pclass, rdata, idata):
         self.position = position
         self.pclas = pclass
+        self.num_grains = idata[0]
+        self.ol_rotmats = self._unpack_drex_rdata(rdata, self.num_grains)
+
+    def _unpack_drex_rdata(self, data, ngr):
+        """Data is a 1D numpy array. This function pulls out the usefull info"""
+
+        ol_dat = data[0:3*3*ngr].reshape((ngr,3,3))
+
+        return ol_dat
 
 def process_drex_particles(particles):
 
     drex_particles = []
     for particle in particles:
         if particle['particle_class'] == 'drex':
-            drex_particles.append(drex_particle(particle['particle_position'].astype(np.float),
-                particle['particle_class']))
+            try:
+                drex_particles.append(drex_particle(
+                    particle['particle_position'].astype(np.float),
+                    particle['particle_class'], particle['particle_rdata'].astype(np.float),
+                    particle['particle_idata'].astype(np.int32)))
+            except:
+                print particle['particle_rdata']
+                print "Skipped this particle"
+                raise
 
     return drex_particles
+
 
 def plot_particle_list(particle_list):
     from mpl_toolkits.mplot3d import Axes3D
@@ -133,3 +150,5 @@ if __name__ == '__main__':
     drex_particles = process_drex_particles(particles)
     print len(drex_particles)
     plot_particle_list(drex_particles)
+
+    print drex_particles[1].ol_rotmats[0,:,:]
