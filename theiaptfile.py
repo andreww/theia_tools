@@ -98,7 +98,7 @@ class drex_particle(object):
     def _unpack_drex_rdata(self, data, ngr):
         """Data is a 1D numpy array. This function pulls out the usefull info"""
 
-        ol_dat = data[0:3*3*ngr].reshape((ngr,3,3))
+        ol_dat = data[0:3*3*ngr].reshape((3,3, ngr)).T
 
         return ol_dat
 
@@ -118,6 +118,19 @@ def process_drex_particles(particles):
                 raise
 
     return drex_particles
+
+def assert_is_rotmat(rotmat):
+    """Checks that a numpy matrix is a rotation matrix
+
+       Rotation matricies must be of shape (3,3), have a
+       determinent of 1 and have the property of the 
+       inverse being equal to the transpose. We check 
+       all three and raise an AssertionError if this 
+       is not the case."""
+
+    assert rotmat.shape == (3,3)
+    np.testing.assert_array_almost_equal(np.linalg.det(rotmat), 1.0)
+    np.testing.assert_array_almost_equal(rotmat.transpose(), np.linalg.inv(rotmat))
 
 
 def plot_particle_list(particle_list):
@@ -152,3 +165,4 @@ if __name__ == '__main__':
     plot_particle_list(drex_particles)
 
     print drex_particles[1].ol_rotmats[0,:,:]
+    assert_is_rotmat(drex_particles[1].ol_rotmats[0,:,:])
