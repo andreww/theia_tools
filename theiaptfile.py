@@ -119,6 +119,43 @@ class drex_particle(object):
                                self.volfrac_ol, scheme=scheme)
         return ol_cij
         
+    def enstatite_cij(self, scheme='Voigt'):
+
+        # Single crystal enstatite elasticity from DRex - should
+        # check that this is up to date.
+        en_cij_single = np.zeros((6,6))
+        en_cij_single[0,0] = 236.9
+        en_cij_single[1,1] = 180.5
+        en_cij_single[2,2] = 230.4
+        en_cij_single[0,1] = 79.6
+        en_cij_single[1,0] = en_cij_single[0,1]
+        en_cij_single[2,0] = 63.2
+        en_cij_single[0,2] = en_cij_single[2,0]
+        en_cij_single[1,2] = 56.8
+        en_cij_single[2,1] = en_cij_single[1,2]
+        en_cij_single[3,3] = 84.3
+        en_cij_single[4,4] = 79.4
+        en_cij_single[5,5] = 80.1
+        
+
+        en_cij = tex2elas.calc_cij(en_cij_single, self.g_en, 
+                               self.volfrac_en, scheme=scheme)
+        return en_cij
+
+    def bulk_cij(self, scheme='Voigt'):
+
+        if scheme=='Voigt':
+            cij = self.fraction_olivine*self.olivine_cij(scheme='Voigt') + (1.0 - 
+                 self.fraction_olivine)*self.enstatite_cij(scheme='Voigt')
+        elif scheme == 'Reuss':
+            cij = self.fraction_olivine*self.olivine_cij(scheme='Reuss') + (1.0 - 
+                 self.fraction_olivine)*self.enstatite_cij(scheme='Reuss')
+        elif scheme == 'Hill':
+            cij = (self.bulk_cij(scheme='Voigt') + self.bulk_cij(scheme='Reuss'))/2.0
+        else:
+            raise ValueError('Scheme argument must be one of Voigt, Reuss or Hill')
+
+        return cij
 
     def _unpack_drex_rdata(self, data, ngr):
         """Data is a 1D numpy array. This function pulls out the usefull info"""
@@ -127,6 +164,7 @@ class drex_particle(object):
         self.g_en = data[3*3*ngr:2*3*3*ngr].reshape((3,3,ngr)).T
         self.volfrac_ol = data[2*3*3*ngr:2*3*3*ngr+ngr]
         self.volfrac_en = data[2*3*3*ngr+ngr:2*3*3*ngr+2*ngr]
+        self.fraction_olivine = data[3*3*ngr*2+ngr*4+10]
 
 def process_drex_particles(particles):
 
@@ -203,3 +241,8 @@ if __name__ == '__main__':
     print drex_particles[1].olivine_cij(scheme='Voigt')
     print drex_particles[1].olivine_cij(scheme='Reuss')
     print drex_particles[1].olivine_cij(scheme='Hill')
+
+    print drex_particles[1].fraction_olivine
+    print drex_particles[1].bulk_cij(scheme='Hill')
+     
+
