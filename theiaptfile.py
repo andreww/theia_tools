@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
 import numpy as np
+
 import tex2elas
+import CijUtil
 
 def read_texture_file(filename):
     """Read data from a theia texture file"""
@@ -205,12 +207,15 @@ def plot_particle_list(particle_list):
     xs = []
     ys = []
     zs = []
+    ua = []
     for particle in particle_list:
         xs.append(particle.position[0])
         ys.append(particle.position[1])
         zs.append(particle.position[2])
+        ua.append(CijUtil.uAniso(drex_particles[1].bulk_cij(scheme='Hill'), 
+            np.zeros((6,6)))[0]) # Don't need the error
 
-    ax.scatter(xs, ys, zs)
+    ax.scatter(xs, ys, zs, c=ua)
     plt.show()
 
 if __name__ == '__main__':
@@ -244,5 +249,7 @@ if __name__ == '__main__':
 
     print drex_particles[1].fraction_olivine
     print drex_particles[1].bulk_cij(scheme='Hill')
+
+    print CijUtil.uAniso(drex_particles[1].bulk_cij(scheme='Hill'), np.zeros((6,6)))
      
 
