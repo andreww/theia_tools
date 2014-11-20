@@ -159,6 +159,17 @@ class drex_particle(object):
 
         return cij
 
+    def bulk_anisotropy(self, scheme='Voigt'):
+        """Calculate and return the universal anisotropy index
+
+        """
+        Ua, Ua_sigma = CijUtil.uAniso(self.bulk_cij(scheme=scheme), 
+                           np.zeros((6,6))) # We don't use the error (Ua_sigma) 
+                                            # as we don't know the error on the
+                                            # single crystal elasticity.
+
+        return Ua
+
     def _unpack_drex_rdata(self, data, ngr):
         """Data is a 1D numpy array. This function pulls out the usefull info"""
 
@@ -212,8 +223,7 @@ def plot_particle_list(particle_list):
         xs.append(particle.position[0])
         ys.append(particle.position[1])
         zs.append(particle.position[2])
-        ua.append(CijUtil.uAniso(drex_particles[1].bulk_cij(scheme='Hill'), 
-            np.zeros((6,6)))[0]) # Don't need the error
+        ua.append(particle.bulk_anisotropy(scheme='Hill'))
 
     ax.scatter(xs, ys, zs, c=ua)
     plt.show()
