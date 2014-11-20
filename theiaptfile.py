@@ -229,37 +229,31 @@ def plot_particle_list(particle_list):
     plt.show()
 
 if __name__ == '__main__':
+    import sys
     import argparse
 
     parser = argparse.ArgumentParser(description=
-                'Read data from Theia particle data files.')
-    parser.add_argument('theiafile', help='Theia data file')
+                'Read data from Theia particle data files, convert it to elasticity, and print to STDOUT')
+    parser.add_argument('theiafile', help='Theia data file(s)', nargs='+')
+    parser.add_argument('-s', '--scheme', help='Elasticity averaging scheme',
+                choices=['Hill', 'Voigt', 'Reuss'], default='Hill')
+    parser.add_argument('-p', '--plot', action='store_true', 
+                help='Plot the universal anisotropy index distribution in 3D')
+    #parser.add_argument('-o', '--outfile', help='Ouput plot to a file')
     args = parser.parse_args()
 
-    header_data, particles = read_texture_file(args.theiafile)
-    print header_data
-    print len(particles)
-    drex_particles = process_drex_particles(particles)
-    print len(drex_particles)
-    plot_particle_list(drex_particles)
+    # Read particles out of all files, concating output
+    all_particles = []
+    for this_file in args.theiafile:
+        sys.stderr.write("Reading data from {0}\n".format(this_file))
+        header_data, particles = read_texture_file(this_file)
+        all_particles.extend(particles)
 
-    print drex_particles[1].g_ol[0,:,:]
-    print drex_particles[1].volfrac_ol[0]
-    print np.sum(drex_particles[1].volfrac_ol[:])
-    print drex_particles[1].g_en[0,:,:]
-    print drex_particles[1].volfrac_en[0]
-    print np.sum(drex_particles[1].volfrac_en[:])
+    sys.stderr.write("{0} particles read\n".format(len(all_particles)))
+    drex_particles = process_drex_particles(all_particles)
+    sys.stderr.write("{0} DRex particles processed\n".format(len(drex_particles)))
 
-    assert_is_rotmat(drex_particles[1].g_ol[0,:,:])
-    assert_is_rotmat(drex_particles[1].g_en[10,:,:])
+    if args.plot:
+        plot_particle_list(drex_particles)
 
-    print drex_particles[1].olivine_cij(scheme='Voigt')
-    print drex_particles[1].olivine_cij(scheme='Reuss')
-    print drex_particles[1].olivine_cij(scheme='Hill')
-
-    print drex_particles[1].fraction_olivine
-    print drex_particles[1].bulk_cij(scheme='Hill')
-
-    print CijUtil.uAniso(drex_particles[1].bulk_cij(scheme='Hill'), np.zeros((6,6)))
-     
 
