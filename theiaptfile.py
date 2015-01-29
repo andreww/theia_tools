@@ -82,7 +82,7 @@ def read_texture_file(filename):
                     particle_header_lines = 9
             elif particle_header_lines == 0:
                     this_particle['particle_rdata'] = np.array(
-                        [line.rstrip('\r\n')[i:i+12] for i in xrange(0, len(line.rstrip('\r\n')), 12)]
+                        [line.rstrip('\r\n')[i:i+14] for i in xrange(0, len(line.rstrip('\r\n')), 14)]
                         )
                     particles.append(this_particle)
                     particle_header_lines = 9
