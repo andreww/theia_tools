@@ -163,8 +163,8 @@ class drex_particle(object):
         """Calculate and return the universal anisotropy index
 
         """
-        Ua, Ua_sigma = CijUtil.uAniso(self.bulk_cij(scheme=scheme), 
-                           np.zeros((6,6))) # We don't use the error (Ua_sigma) 
+        Ua, Ua_sigma = CijUtil.uAniso(self.bulk_cij(scheme=scheme))
+                                            # We don't use the error (Ua_sigma) 
                                             # as we don't know the error on the
                                             # single crystal elasticity.
 

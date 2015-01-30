@@ -151,7 +151,7 @@ def invertCij(Cij, eCij):
     return (Sij, eSij, vcovSij)
 
 
-def polyCij(Cij, eCij=np.zeros((6,6))):
+def polyCij(Cij, eCij=None):
     """Returns voight-reuss-hill average of elastic constants tensor
     and propogated error given the 6*6 matrix of elastic constants
     and the 6*6 matrix of errors. The errors are optional. Assumes
@@ -160,7 +160,10 @@ def polyCij(Cij, eCij=np.zeros((6,6))):
     matrix."""
 
     # Need compliances too:
-    (sij, eSij, covSij) = invertCij(Cij, eCij)
+    if eCij is None:
+        sij = np.linalg.inv(Cij)
+    else:
+        (sij, eSij, covSij) = invertCij(Cij, eCij)
 
     # These equations are valid for all crystal systems (only 9 of 
     # the 21 elastic constants ever have to be used, e.g. see Anderson 
@@ -169,28 +172,31 @@ def polyCij(Cij, eCij=np.zeros((6,6))):
     voigtB = (1.0/9)*(Cij[0,0] + Cij[1,1] + Cij[2,2] ) \
            + (2.0/9)*(Cij[0,1] + Cij[0,2] + Cij[1,2])
 
-    evB = np.sqrt( (1.0/81)*(eCij[0,0]**2 + eCij[1,1]**2 + eCij[2,2]**2) \
+    if eCij is not None:
+        evB = np.sqrt( (1.0/81)*(eCij[0,0]**2 + eCij[1,1]**2 + eCij[2,2]**2) \
                   +(2.0/81)*(eCij[0,1]**2 + eCij[0,2]**2 + eCij[1,2]**2) )
 
     reussB = 1.0/((sij[0,0]+sij[1,1]+sij[2,2]) + 2*(sij[0,1]+sij[0,2]+sij[1,2]))
 
-    # Note that COV(X+Z,Y) = COV(X,Y)+COV(Z,Y) and 
-    # COV(SUM(Xi),SUM(Yj)) = SUM(SUM(COV(Xi,Yj)
-    # c.f. http://mathworld.wolfram.com/Covariance.html
-    erB = (np.sqrt(eSij[0,0]**2 + eSij[1,1]**2 + eSij[2,2]**2  \
+    if eCij is not None:
+        # Note that COV(X+Z,Y) = COV(X,Y)+COV(Z,Y) and 
+        # COV(SUM(Xi),SUM(Yj)) = SUM(SUM(COV(Xi,Yj)
+        # c.f. http://mathworld.wolfram.com/Covariance.html
+        erB = (np.sqrt(eSij[0,0]**2 + eSij[1,1]**2 + eSij[2,2]**2  \
                    + 4*eSij[0,1]**2 + 4*eSij[0,2]**2 + 4*eSij[1,2]**2  \
                    + 2*covSij[0,0,1,1] + 2*covSij[0,0,2,2] + 2*covSij[1,1,2,2] \
                    + 4*covSij[0,0,0,1] + 4*covSij[0,0,0,2] + 4*covSij[0,0,1,2] \
                    + 4*covSij[1,1,0,1] + 4*covSij[1,1,0,2] + 4*covSij[1,1,1,2] \
                    + 4*covSij[2,2,0,1] + 4*covSij[2,2,0,2] + 4*covSij[2,2,1,2] \
                    + 8*covSij[0,1,0,2] + 8*covSij[0,1,1,2] + 8*covSij[0,2,1,2] )) \
-        * reussB**2
+            * reussB**2
 
     voigtG = (1.0/15)*(Cij[0,0] + Cij[1,1] + Cij[2,2] - \
                        Cij[0,1] - Cij[0,2] - Cij[1,2]) + \
              (1.0/5)*(Cij[3,3] + Cij[4,4] + Cij[5,5])
 
-    evG = np.sqrt( (1.0/225)*(eCij[0,0]**2 + eCij[1,1]**2 + \
+    if eCij is not None:
+        evG = np.sqrt( (1.0/225)*(eCij[0,0]**2 + eCij[1,1]**2 + \
                               eCij[2,2]**2 + eCij[0,1]**2 + \
                               eCij[0,2]**2 + eCij[1,2]**2) + \
                     (1.0/25)*(eCij[3,3]**2 + eCij[4,4]**2 + eCij[5,5]**2) )
@@ -198,7 +204,8 @@ def polyCij(Cij, eCij=np.zeros((6,6))):
     reussG = 15.0/(4*(sij[0,0]+sij[1,1]+sij[2,2]) - \
                    4*(sij[0,1]+sij[0,2]+sij[1,2]) + 3*(sij[3,3]+sij[4,4]+sij[5,5]))
 
-    erG = np.sqrt( \
+    if eCij is not None:
+        erG = np.sqrt( \
                   16*(eSij[0,0]**2 + eSij[1,1]**2 + eSij[2,2]**2) \
                 + 16*(eSij[0,1]**2 + eSij[0,2]**2 + eSij[1,2]**2) \
                 +  9*(eSij[3,3]**2 + eSij[4,4]**2 + eSij[5,5]**2) \
@@ -216,10 +223,15 @@ def polyCij(Cij, eCij=np.zeros((6,6))):
                 + 18*covSij[3,3,4,4] + 18*covSij[3,3,5,5] + 18*covSij[4,4,5,5] \
                 ) * (reussG**2 / 15)
 
-    return (voigtB, reussB, voigtG, reussG, ((voigtB+reussB)/2.0), ((voigtG+reussG)/2.0),
+    if eCij is not None:
+        return (voigtB, reussB, voigtG, reussG, ((voigtB+reussB)/2.0), ((voigtG+reussG)/2.0),
                evB, erB, evG, erG, ((evB+erB)/2), ((evG+erG)/2))
+    else:
+        return (voigtB, reussB, voigtG, reussG, ((voigtB+reussB)/2.0), ((voigtG+reussG)/2.0),
+               None, None, None, None, None, None)
 
-def zenerAniso(Cij,eCij=np.zeros((6,6))):
+
+def zenerAniso(Cij,eCij=None):
     """Returns Zener anisotropy index, A, defined as
     2C44/(C11-C12). This is unity for an isotropic crystal 
     and, for a cubic crystal C44 and 1/2(C11-C12) are shear 
@@ -229,20 +241,26 @@ def zenerAniso(Cij,eCij=np.zeros((6,6))):
     Also returns the error on the anisotriopy index.
     Note that we don't check that the crystal is cubic!"""
     zA = (Cij[3,3]*2)/(Cij[0,0]-Cij[0,1])
-    ezA = np.sqrt(((eCij[0,0]/Cij[0,0])**2 + (eCij[0,1]/Cij[0,1])**2) +\
+    if eCij is None:
+        return zenerAniso, None
+    else:
+        ezA = np.sqrt(((eCij[0,0]/Cij[0,0])**2 + (eCij[0,1]/Cij[0,1])**2) +\
            (2*(eCij[3,3]/Cij[3,3])**2)) * zA
-    return (zA, ezA)
+        return (zA, ezA)
 
-def uAniso(Cij,eCij):
+def uAniso(Cij,eCij=None):
     """Returns the Universal elastic anisotropy index defined 
     by Ranganathan and Ostoja-Starzewski (PRL 101, 05504; 2008
     doi:10.1103/PhysRevLett.101.055504 ). Valid for all systems."""
     (voigtB, reussB, voigtG, reussG, hillB, hillG, 
                        evB, erB, evG, erG, ehB, ehG) = polyCij(Cij,eCij)
     uA = (5*(voigtG/reussG))+(voigtB/reussB)-6
-    euA = np.sqrt((np.sqrt((evG/voigtG)**2 + (erG/reussG)**2)*(voigtG/reussG))**2 + \
+    if eCij is None:
+        return uA, None
+    else:
+        euA = np.sqrt((np.sqrt((evG/voigtG)**2 + (erG/reussG)**2)*(voigtG/reussG))**2 + \
                   (np.sqrt((evB/voigtB)**2 + (erB/reussB)**2)*(voigtB/reussB))**2)
-    return (uA, euA)
+        return (uA, euA)
 
 def youngsmod(Cij, eCij=np.zeros((6,6))):
     """Returns the Young's moduli, Poission ratio 
