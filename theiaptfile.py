@@ -228,6 +228,11 @@ def plot_particle_list(particle_list):
     ax.scatter(xs, ys, zs, c=ua)
     plt.show()
 
+def print_particle_list(particle_list):
+
+    for particle in particle_list:
+        print particle.position[0], particle.position[1], particle.position[2], particle.bulk_anisotropy(scheme='Hill')
+
 if __name__ == '__main__':
     import sys
     import argparse
@@ -255,5 +260,7 @@ if __name__ == '__main__':
 
     if args.plot:
         plot_particle_list(drex_particles)
+    else:
+        print_particle_list(drex_particles)
 
 
