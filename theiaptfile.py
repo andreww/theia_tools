@@ -173,11 +173,11 @@ class drex_particle(object):
     def _unpack_drex_rdata(self, data, ngr):
         """Data is a 1D numpy array. This function pulls out the usefull info"""
 
-        self.g_ol = data[0:3*3*ngr].reshape((3,3,ngr)).T
-        self.g_en = data[3*3*ngr:2*3*3*ngr].reshape((3,3,ngr)).T
-        self.volfrac_ol = data[2*3*3*ngr:2*3*3*ngr+ngr]
-        self.volfrac_en = data[2*3*3*ngr+ngr:2*3*3*ngr+2*ngr]
-        self.fraction_olivine = data[3*3*ngr*2+ngr*4+10]
+        self.g_ol = np.copy(data[0:3*3*ngr].reshape((3,3,ngr)).T)
+        self.g_en = np.copy(data[3*3*ngr:2*3*3*ngr].reshape((3,3,ngr)).T)
+        self.volfrac_ol = np.copy(data[2*3*3*ngr:2*3*3*ngr+ngr])
+        self.volfrac_en = np.copy(data[2*3*3*ngr+ngr:2*3*3*ngr+2*ngr])
+        self.fraction_olivine = np.copy(data[3*3*ngr*2+ngr*4+10])
 
 def process_drex_particles(particles):
 
