@@ -2,6 +2,7 @@
 
 import os
 import re
+import sys
 import numpy as np
 
 def read_out(filename):
@@ -69,15 +70,54 @@ def read_out(filename):
 
     return depth, viscmin, viscmax, radial_factor, viscmean
 
+def plot_viscosity(depth, viscosity, filename=None):
+    """Create a graph of viscosity v's depth
+
+    this can optionally be written in a file"""
+
+    import matplotlib
+    if filename is not None:
+        matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.invert_yaxis()
+    ax.plot(viscosity, depth, 'k-')
+    ax.set_xlabel('Viscosity (Pa.s)')
+    ax.set_ylabel('Depth (km)')
+    if filename is not None:
+        plt.savefig(filename)
+    else:
+        plt.show()
+
+def viscosity_table(depth, viscosity, filename=None):
+
+    if filename is not None: 
+        f = open(filename, 'w')
+    else:
+        f = sys.stdout
+
+    for d, v in zip(depth, viscosity):
+        f.write("{0:6.3f} {1:6.3e}\n".format(d, v))
+
+    if filename is not None: 
+        f.close()
+
 if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser(description=
               'Extract viscosity from TERRA out file.')
-    parser.add_argument('outfile', help='TERRA out file')
-    #parser.add_argument('-o', '--outfile', help='Ouput graph to a file')
+    parser.add_argument('terraout', help='TERRA out file')
+    parser.add_argument('-o', '--outfile', help='Write ouput to a file')
+    parser.add_argument('-p', '--plot', help='Create a graph', 
+                        action='store_true')
     args = parser.parse_args()
 
-    depth, viscmin, viscmax, radial_factor, viscmean = read_out(args.outfile)
-    print depth
-    print viscmean
+    depth, viscmin, viscmax, radial_factor, viscmean = read_out(args.terraout)
+
+    if args.plot:
+        plot_viscosity(depth, viscmean, args.outfile)
+    else:
+        viscosity_table( depth, viscmean, args.outfile)
+        
