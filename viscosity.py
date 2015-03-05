@@ -82,7 +82,7 @@ def plot_viscosity(depth, viscosity, filename=None):
     fig = plt.figure()
     ax = fig.add_subplot(111)
     ax.invert_yaxis()
-    ax.plot(viscosity, depth, 'k-')
+    ax.plot(viscosity, depth, 'k-', viscosity, depth, 'ko')
     ax.set_xlabel('Viscosity (Pa.s)')
     ax.set_ylabel('Depth (km)')
     if filename is not None:
