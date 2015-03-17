@@ -2,7 +2,7 @@
 
 import numpy as np
 
-def visc_profile(nu_lid, z_lid, nu_j, lam, z_j, z):
+def visc_profile(nu_lid, z_lid, nu_j, lam, z_j, z, z_lid_slope_width=0.0):
     """Smoothed lower viscosity jump for base of the asthenosphere
     
     The upper boundary is defined by a lid nu_lid times more 
@@ -23,8 +23,12 @@ def visc_profile(nu_lid, z_lid, nu_j, lam, z_j, z):
     nu = ((1-nu_j)/2)*np.tanh(lam*(z_j-z_norm))+((nu_j+1)/2)
     
     for i in range(len(nu)):
-        if z[i] < z_lid:
+        if z[i] <= (z_lid-z_lid_slope_width):
             nu[i] = nu_lid
+        elif z[i] < (z_lid):
+            frac = (z_lid - z[i])/z_lid_slope_width
+            nu[i] = (1-frac)*nu[i] + frac*nu_lid
+               
     nu[-1] = nu_j
     
     return nu
@@ -36,10 +40,11 @@ def write_viscosity_file(filename, header, z, nu):
         f.write("{:10.3f} {:10.3f}\n".format(zi, nui))
     f.close()
 
-def make_viscosity_profile(nu_lid, z_lid, nu_j, lam, z_j, z_max, steps):
+def make_viscosity_profile(nu_lid, z_lid, nu_j, lam, z_j, z_max, steps,
+       z_lid_slope_width):
 
     z = np.linspace(0.0, z_max, steps)
-    nu = visc_profile(nu_lid, z_lid, nu_j, lam, z_j, z)
+    nu = visc_profile(nu_lid, z_lid, nu_j, lam, z_j, z, z_lid_slope_width)
     return (z, nu)
 
 def plot_viscosity_profile(z, nu, filename=None):
@@ -67,6 +72,8 @@ if __name__ == "__main__":
                help="Viscosity of lithosphere")
     parser.add_argument('--z_lid', type=float, default=100.0,
                help="Depth of base of lithosphere")
+    parser.add_argument('--z_lid_jump', type=float, default=50.0,
+               help="Smooth the LAB jump over z_lid_jump km")
     parser.add_argument('--nu_j', type=float, default=10.0,
                help="Viscosity of lower mantle")
     parser.add_argument('--lam', type=float, default=10.0,
@@ -83,7 +90,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     z, nu = make_viscosity_profile(args.nu_lid, args.z_lid, 
-                 args.nu_j, args.lam, args.z_j, args.z_max, args.steps)
+                 args.nu_j, args.lam, args.z_j, args.z_max, args.steps,
+                 args.z_lid_jump)
 
     if args.plot:
         plot_viscosity_profile(z, nu, args.outfile)
